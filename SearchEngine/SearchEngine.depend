@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1419529026 source:/home/efi/MyProjects/SearchEngine/searchEngine/SearchEngine/Utils.cpp
+	"Utils.h"
+	<thread>
+
+1419529333 /home/efi/MyProjects/SearchEngine/searchEngine/SearchEngine/Utils.h
+
