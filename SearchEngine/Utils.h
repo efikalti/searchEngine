@@ -1,6 +1,9 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <string>
+
+using namespace std;
 
 class Utils
 {
@@ -8,6 +11,8 @@ class Utils
         Utils();
         virtual ~Utils();
         int getSystemThreads();
+        bool getFilePath();
+        bool readFile(char* filename);
     protected:
     private:
 };
