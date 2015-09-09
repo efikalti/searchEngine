@@ -11,9 +11,11 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="docs/file1.txt" />
 				<Compiler>
 					<Add option="-std=c++11" />
 					<Add option="-g" />
+					<Add directory="include" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -23,6 +25,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add directory="include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -35,7 +38,11 @@
 		</Compiler>
 		<Unit filename="Utils.cpp" />
 		<Unit filename="Utils.h" />
+		<Unit filename="include/Doc.h" />
+		<Unit filename="include/DocList.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="src/Doc.cpp" />
+		<Unit filename="src/DocList.cpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />
