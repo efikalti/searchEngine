@@ -1,6 +1,12 @@
 #include <iostream>
 #include <string>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
 #include <map>
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #include "Utils.h"
 #include "Doc.h"
 #include "DocList.h"
@@ -12,25 +18,33 @@ void printWordIndex(map<string, DocList> w);
 int main(int argc, char* argv[])
 {
     Utils u;
+    struct rusage usage;
+    struct timeval start, end;
     map <string, DocList> word_index;
 
     int num_of_threads = u.getSystemThreads();
-    cout << num_of_threads << endl;
+    cout << "cpus: " << num_of_threads << endl;
 
-    if (u.readFile(argv[1]))
-    {
-        cout << "path success."<<endl;
-    }
+    getrusage(RUSAGE_SELF, &usage);
+    start = usage.ru_stime;
+    // Build Index.
+    u.createIndex(num_of_threads, &word_index, argv[1]);
+    // Building of Index finished.
+    getrusage(RUSAGE_SELF, &usage);
+    end = usage.ru_stime;
 
-    Doc a = Doc(1);
-    Doc b = Doc(2);
-    a.add(5);
-    DocList l = DocList();
-    l.addDoc(a);
-    l.addDoc(b);
+    printf("Started building Inverted Index at : %ld.%lds\n", start.tv_sec, start.tv_usec);
+    printf("Ended at                           : %ld.%lds\n", end.tv_sec, end.tv_usec);
 
-    word_index["one"] = l;
+
     printWordIndex(word_index);
+    u.printDocsCounters();
+
+
+    u.submitQuery("efi is great!", &word_index);
+
+
+    map<string, int> doc;
 
     return 0;
 }

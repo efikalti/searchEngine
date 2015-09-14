@@ -34,9 +34,14 @@ void Doc::setID(int id)
     this->ID = id;
 }
 
-void Doc::add(int num)
+void Doc::setNum(int num)
 {
-    this->num_of_app += num;
+    this->num_of_app = num;
+}
+
+void Doc::add()
+{
+    this->num_of_app++;
 }
 
 void Doc::print()
