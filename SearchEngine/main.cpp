@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
     u.printDocsCounters();
 
 
-    u.submitQuery("efi is great!", &word_index);
+    u.submitQuery("is document", &word_index);
 
 
     map<string, int> doc;

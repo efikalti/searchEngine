@@ -287,7 +287,6 @@ void Utils::submitQuery(string query, map<string, DocList>* index)
     map<unsigned int, float> answer_set;
     DocList d_list;
     vector<Doc> word_docs;
-    string word;
     float TF;
     float IDF;
     int words;
@@ -298,10 +297,12 @@ void Utils::submitQuery(string query, map<string, DocList>* index)
     istringstream iss(query);
     while (iss)
     {
+        string word;
         iss >> word;
         if (!word.empty())
         {
             d_list = (*index)[word];
+            d_list.print();
             word_docs = d_list.getDocs();
             for (unsigned int i=0; i<word_docs.size(); i++)
             {
@@ -309,11 +310,26 @@ void Utils::submitQuery(string query, map<string, DocList>* index)
                 id = word_docs[i].getID();
                 words = docs[id][1];
                 max_freq = docs[id][0];
-                TF = ( (float) word_docs[i].getNum() / words ) / ( (float) max_freq / words );
-                IDF =  log ( (float) num_of_docs / d_list.getNum());
+                TF = (  (float) (word_docs[i].getNum()) / (float) (words) ) / ( (float) max_freq / (float) words );
+                IDF = log( (float) (num_of_docs) / (float)(d_list.getNum()) );
                 weight = TF * IDF;
                 answer_set[id] += weight;
             }
+        }
+    }
+    map<float, vector<int>> sorted_answers;
+    map<unsigned int, float>::iterator it;
+    for (it=answer_set.begin(); it!=answer_set.end(); ++it)
+    {
+        sorted_answers[it->second].push_back(it->first);
+    }
+    map<float, vector<int>>::iterator it2;
+    for (it2=sorted_answers.begin(); it2!=sorted_answers.end(); ++it2)
+    {
+        vector<int> ids = it2->second;
+        for(unsigned int i=0; i<ids.size(); i++)
+        {
+            cout<<"Doc: "<<ids[i]<<", value: "<<it2->first<<endl;
         }
     }
 }
