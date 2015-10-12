@@ -50,3 +50,10 @@ void Doc::print()
     cout<<"Number of appearences : "<<this->num_of_app<<endl;
     cout<<"--------------------------------"<<endl;
 }
+
+void Doc::printTo(ostream &stream)
+{
+    stream<<"Doc id                : "<<this->ID<<endl;
+    stream<<"Number of appearences : "<<this->num_of_app<<endl;
+    stream<<"--------------------------------"<<endl;
+}

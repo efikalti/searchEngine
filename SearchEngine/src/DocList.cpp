@@ -6,7 +6,6 @@ using namespace std;
 DocList::DocList()
 {
     this->num = 0;
-    //this->docs.reserve(10);
 }
 
 DocList::~DocList()
@@ -32,7 +31,7 @@ void DocList::incrementDoc(int pos)
 
 int DocList::searchDoc(int id)
 {
-    for (int i=0; i<this->docs.size(); i++)
+    for (unsigned int i=0; i<this->docs.size(); i++)
     {
         if (this->docs[i].getID() == id)
         return i;
@@ -55,8 +54,19 @@ void DocList::print()
     cout<<"Appearances           : "<<this->num<<endl;
     cout<<"Documents               "<<endl;
     cout<<"--------------------------------"<<endl;
-    for (int i=0; i<this->docs.size(); i++)
+    for (unsigned int i=0; i<this->docs.size(); i++)
     {
         this->docs[i].print();
+    }
+}
+
+void DocList::printTo(ostream &stream)
+{
+    stream<<"Appearances           : "<<this->num<<endl;
+    stream<<"Documents               "<<endl;
+    stream<<"--------------------------------"<<endl;
+    for (unsigned int i=0; i<this->docs.size(); i++)
+    {
+        this->docs[i].printTo(stream);
     }
 }

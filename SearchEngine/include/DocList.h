@@ -2,26 +2,26 @@
 #define DOCLIST_H
 
 #include <vector>
+#include <iostream>
 #include "Doc.h"
 
 class DocList
 {
     public:
-        DocList();
+        DocList(); //constructor
         virtual ~DocList();
-        void addDoc(Doc doc);
-        void incrementDoc(int pos);
-        void print();
-        int searchDoc(int id);
-        int getNum();
-        int getDocNum(int pos);
-        std::vector<Doc> getDocs();
+        void addDoc(Doc doc); // add document in the list
+        void incrementDoc(int pos); // increment the number of appearances for the document in this position
+        void print(); // Print all the information for this word
+        int searchDoc(int id); // Search for the document with this id in the list
+        int getNum(); // Return number of appearances
+        int getDocNum(int pos); // Return the document in this position
+        std::vector<Doc> getDocs(); // Return list with documents
+        void printTo(std::ostream &stream); // Print to specific stream
     protected:
     private:
-        int size;
-        int pos;
-        int num; //number of appearances in all docs
-        std::vector<Doc> docs;
+        int num; //number of appearances, one for each document
+        std::vector<Doc> docs; // List with documents
 };
 
 #endif // DOCLIST_H

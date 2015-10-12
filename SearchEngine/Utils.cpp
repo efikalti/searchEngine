@@ -9,6 +9,7 @@
 #include <sstream>
 #include <mutex>
 #include <math.h>
+#include <algorithm>
 
 using namespace std;
 
@@ -26,11 +27,14 @@ Utils::~Utils()
     //dtor
 }
 
-void printIndex(map<string, DocList> w)
+/**
+Print inverted index.
+*/
+void  Utils::printIndex(map<string, DocList> *w)
 {
     cout<<"Index: "<<endl;
     map<std::string, DocList>::iterator it;
-    for (it=w.begin(); it!=w.end(); ++it)
+    for (it=w->begin(); it!=w->end(); ++it)
     {
         cout<<"Word                  : "<<it->first<<endl;
         it->second.print();
@@ -38,6 +42,26 @@ void printIndex(map<string, DocList> w)
 
 }
 
+/**
+Print index to file.
+*/
+void Utils::printIndexToFile(string filename, map<string, DocList> *w)
+{
+      ofstream file;
+      file.open (filename, ios::trunc);
+      file<<"Index: "<<endl;
+      map<std::string, DocList>::iterator it;
+      for (it=w->begin(); it!=w->end(); ++it)
+      {
+        file<<"Word                  : "<<it->first<<endl;
+        it->second.printTo(file);
+      }
+      file.close();
+}
+
+/**
+Print the document counters, max frequency and number of words for each document.
+*/
 void Utils::printDocsCounters()
 {
     cout<<"Docs: "<<endl;
@@ -50,7 +74,7 @@ void Utils::printDocsCounters()
 }
 
 /**
-Returns the number of the system thread cores
+Returns the number of the system thread cores.
 */
 int Utils::getSystemThreads()
 {
@@ -61,6 +85,9 @@ int Utils::getSystemThreads()
 
 /**
 Reads the file with that filename,line by line.
+It calculates the max frequency and the number of words for each document and saves them in the docs global map.
+For each document content, splits the content to words,removes punctuation and inserts the word with the document id into the
+inverted index.
 */
 void readFile(char* filename, int file_start, int file_end, map<string, DocList> *index)
 {
@@ -73,15 +100,10 @@ void readFile(char* filename, int file_start, int file_end, map<string, DocList>
         return;
     }
     string line;
-    bool first = true;
     int counter = 0;
     while ( getline (file,line) )
     {
-        if (first)
-        {// Ignore first line
-            first = false;
-        }
-        else if (counter > file_start && counter <= file_end)
+        if (counter > file_start && counter <= file_end)
         {// Read only the lines from file_start to file_end
             // From each line, the first word is the document id and the rest the content of the document.
             istringstream iss(line);
@@ -103,6 +125,10 @@ void readFile(char* filename, int file_start, int file_end, map<string, DocList>
                     }
                     else if (!word.empty())
                     { // Insert word in inverted index.
+                        string temp;
+                        remove_copy_if(word.begin(), word.end(), back_inserter(temp), ptr_fun<int, int>(&std::ispunct));
+                        word = temp;
+
                         //Search if word exists
                         if ( (*index)[word].getNum() == 0 )
                         {
@@ -171,7 +197,7 @@ void readFile(char* filename, int file_start, int file_end, map<string, DocList>
 }
 
 /**
-Reads the number of lines of input file.
+Reads and returns the number of lines of input file.
 */
 int Utils::getNumberOfLines(char* filename)
 {
@@ -187,23 +213,20 @@ int Utils::getNumberOfLines(char* filename)
     int lines;
     while ( getline (file,line) )
     {// Read first line containing the number of lines
-        lines =atoi( line.c_str() );
+        lines = atoi( line.c_str() );
         file.close();
         return lines;
     }
     return 0;
 }
-void something()
-{
-
-}
 
 /**
 Create, start the threads and create the index.
 */
-void Utils::createIndex(int n_threads, map<string, DocList>* index, char* filename)
+void Utils::createIndex(map<string, DocList>* index, char* filename)
 {
     int lines = getNumberOfLines(filename);
+    int n_threads = getSystemThreads();
     num_of_docs = lines;
     int diff;
     if (lines <= n_threads)
@@ -216,15 +239,12 @@ void Utils::createIndex(int n_threads, map<string, DocList>* index, char* filena
         diff = lines / n_threads;
     }
     thread threads[n_threads];
-
-    cout<<n_threads<< " threads created.\n";
     int file_start = 0;
     int file_end = diff;
     for (int i=0; i<n_threads; i++)
     {
         threads[i] = thread(readFile, filename, file_start, file_end, index);
         threads[i].join();
-        cout<<"Thread: "<<i+1<<" for line "<<file_start<<" to "<<file_end<<endl;
         if (file_end < lines)
         {
             file_start += diff;
@@ -241,48 +261,77 @@ void Utils::createIndex(int n_threads, map<string, DocList>* index, char* filena
 }
 
 /**
-Reads the path that contains the documents and returns true if it exists.
+Reads the query file, and submits each query to the system.
 */
-bool Utils::getFilePath()
+void Utils::readQueries(char* filename, map<string, DocList>* index, string output)
 {
-    string path;
-    cout << "Enter the path to the documents' directory:";
-    cin >> path;
+    ifstream file;
+    file.open (filename, ios::in);
 
-    struct dirent *pDirent;
-        DIR *pDir;
-
-        pDir = opendir (path.c_str());
-        if (pDir == NULL) {
-                cout << "ERROR: Cannot open directory " << path << endl;
-                return false;
+    if (!file.is_open())
+    {
+        cout << "ERROR:Could not open file " << filename << endl;
+        return;
+    }
+    string line;
+    bool first = true;
+    while ( getline (file,line) )
+    {// Read first line containing the number of lines
+        if (first)
+        {
+            first = false;
         }
-
-        char *filename = new char[100];
-        while ((pDirent = readdir(pDir)) != NULL) {
-            char* file = pDirent->d_name;
-            if ( strcmp(pDirent->d_name, ".") != 0 && strcmp(pDirent->d_name, "..") != 0)
+        else
+        {
+            // Read each query and submit it.
+            istringstream iss(line);
+            bool first_token = true;
+            bool second_token = false;
+            string query = "";
+            int answers;
+            while (iss)
             {
-                cout << pDirent->d_name << endl;
-
-                strcpy(filename, path.c_str());
-                strcat(filename, "/");
-                strcat(filename, file);
-                //readFile(filename, 0, 0);
+                string word;
+                iss >> word;
+                if (first_token)
+                {
+                    first_token = false;
+                    second_token = true;
+                }
+                else if (second_token)
+                {
+                    answers = atoi( word.c_str() );
+                    second_token = false;
+                }
+                else
+                {
+                    if (!word.empty())
+                    {
+                        query = query + " " + word;
+                    }
+                }
             }
+            if (output.compare("screen") == 0)
+            {
+                submitQuery(query, index, answers, cout);
+            }
+            else
+            {
+                ofstream output_file;
+                output_file.open ("answers.txt", ios::app);
+                submitQuery(query, index, answers, output_file);
+                output_file.close();
+            }
+            query = "";
         }
-        delete [] filename;
-
-        closedir (pDir);
-        free(pDirent);
-
-    return true;
+    }
+    file.close();
 }
 
 /**
-Reads and calculates answer for a query given the index.
+Reads and calculates answer set for a query given the inverted index.
 */
-void Utils::submitQuery(string query, map<string, DocList>* index)
+void Utils::submitQuery(string query, map<string, DocList>* index,int answers, ostream &output)
 {
     map<unsigned int, float> answer_set;
     DocList d_list;
@@ -302,35 +351,56 @@ void Utils::submitQuery(string query, map<string, DocList>* index)
         if (!word.empty())
         {
             d_list = (*index)[word];
-            d_list.print();
-            word_docs = d_list.getDocs();
-            for (unsigned int i=0; i<word_docs.size(); i++)
+            if (d_list.getNum() > 0)
             {
-                // Calculate TF and IDF for each document
-                id = word_docs[i].getID();
-                words = docs[id][1];
-                max_freq = docs[id][0];
-                TF = (  (float) (word_docs[i].getNum()) / (float) (words) ) / ( (float) max_freq / (float) words );
-                IDF = log( (float) (num_of_docs) / (float)(d_list.getNum()) );
-                weight = TF * IDF;
-                answer_set[id] += weight;
+                word_docs = d_list.getDocs();
+                for (unsigned int i=0; i<word_docs.size(); i++)
+                {
+                    // Calculate TF and IDF for each document
+                    id = word_docs[i].getID();
+                    words = docs[id][1];
+                    max_freq = docs[id][0];
+                    TF = (  (float) (word_docs[i].getNum()) / (float) (words) ) / ( (float) max_freq / (float) words );
+                    IDF = log((float) (num_of_docs) / (float)(d_list.getNum()));
+                    if (IDF == 0)
+                    {
+                        IDF = 1;
+                    }
+                    weight = TF * IDF;
+                    answer_set[id] += weight;
+                }
             }
         }
     }
-    map<float, vector<int>> sorted_answers;
+
+    output<<"query:"<<query<<endl;
+    output<<"answer set:"<<endl;
+    map<float, vector<int>, greater<float>> sorted_answers;
     map<unsigned int, float>::iterator it;
+    answers = min(answers, (int)answer_set.size());
     for (it=answer_set.begin(); it!=answer_set.end(); ++it)
     {
         sorted_answers[it->second].push_back(it->first);
     }
     map<float, vector<int>>::iterator it2;
+    int j = 0;
     for (it2=sorted_answers.begin(); it2!=sorted_answers.end(); ++it2)
     {
         vector<int> ids = it2->second;
         for(unsigned int i=0; i<ids.size(); i++)
         {
-            cout<<"Doc: "<<ids[i]<<", value: "<<it2->first<<endl;
+            output<<"Doc: "<<ids[i]<<", value: "<<it2->first<<endl;
+            j++;
+            if (j >= answers)
+            {
+                break;
+            }
+        }
+        if (j >= answers)
+        {
+            break;
         }
     }
+    output<<"---------------------------------"<<endl;
 }
 
